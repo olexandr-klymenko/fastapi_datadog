@@ -1,4 +1,4 @@
-RUN_IN_CONTAINER=docker-compose run --rm -u `id -u`:`id -u` fastapi
+RUN_IN_CONTAINER=docker-compose run --rm -u `id -u`:`id -u`
 HIDE_DOCKER_CLI_DETAILES=COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1
 
 build:
@@ -6,7 +6,8 @@ build:
 
 init_db:
 	docker-compose up -d postgres
-	$(RUN_IN_CONTAINER) python -m scripts.init_test_data
+	$(RUN_IN_CONTAINER) fastapi python -m scripts.init_test_data
+	docker-compose stop postgres
 
 up:
 	docker-compose up -d  --remove-orphans
