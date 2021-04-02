@@ -56,6 +56,7 @@ services:
     build: datadog
     links:
      - redis # ensures that redis is a host that the container can find
+     - postgres
      - fastapi # ensures that the web app can send metrics
     environment:
      - DD_API_KEY=550a6becf14a0a974f939536df9807c0

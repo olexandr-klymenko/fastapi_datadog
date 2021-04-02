@@ -1,3 +1,4 @@
+FASTAPI=fastapi
 RUN_IN_CONTAINER=docker-compose run --rm -u `id -u`:`id -u`
 HIDE_DOCKER_CLI_DETAILES=COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1
 
@@ -6,7 +7,10 @@ build:
 
 init_db:
 	docker-compose up -d postgres
-	$(RUN_IN_CONTAINER) fastapi python -m scripts.init_test_data
+	$(RUN_IN_CONTAINER) $(FASTAPI) python -m scripts.init_test_data
+	docker exec -it `docker ps -aqf "name=postgres"` psql -U postgres -c "create user datadog with password 'datadog';"
+	docker exec -it `docker ps -aqf "name=postgres"` psql -U postgres -c "grant pg_monitor to datadog;"
+	docker exec -it `docker ps -aqf "name=postgres"` psql -U postgres -c "grant SELECT ON pg_stat_database to datadog;"
 	docker-compose stop postgres
 
 up:
