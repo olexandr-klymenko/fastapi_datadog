@@ -5,12 +5,19 @@ from datadog import initialize, statsd
 from fastapi import FastAPI, BackgroundTasks
 
 from app.common import celery_app
+from app.crud.routers.dealers import router as dealers_router
+from app.crud.routers.info import router as info_router
+from app.crud.routers.vehicles import router as vehicles_router
 
 initialize(statsd_host=os.environ.get('DATADOG_HOST'))
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
+
+app.include_router(dealers_router, prefix="/dealers", tags=["dealers"])
+app.include_router(vehicles_router, prefix="/vehicles", tags=["vehicles"])
+app.include_router(info_router)
 
 
 def celery_on_message(body):

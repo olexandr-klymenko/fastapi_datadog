@@ -1,5 +1,7 @@
-fastapi
-celery
-redis
-datadog
-uvicorn
+fastapi==0.63.0
+celery==5.0.5
+redis==3.5.3
+datadog==0.40.1
+uvicorn==0.13.4
+SQLAlchemy==1.4.4
+pg8000==1.19.0
