@@ -1,0 +1,8 @@
+init_config:
+
+instances:
+  - host: redis
+    port: 6379
+    db: 0
+    socket_timeout: 5
+    password: password123

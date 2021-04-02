@@ -1,0 +1,63 @@
+version: "3.7"
+
+services:
+  rabbitmq:
+    image: "bitnami/rabbitmq:3.7"
+    ports:
+      - "4369:4369"
+      - "5672:5672"
+      - "25672:25672"
+      - "15672:15672"
+    volumes:
+      - "rabbitmq_data:/bitnami"
+
+  redis:
+    image: "bitnami/redis:5.0.4"
+    environment:
+      - REDIS_PASSWORD=password123
+    ports:
+      - "6379:6379"
+    volumes:
+      - "redis_data:/bitnami/redis/data"
+
+  fastapi:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - rabbitmq
+      - redis
+    volumes:
+      - "./:/app"
+    environment:
+      - DATADOG_HOST=datadog
+    command: "python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+
+  worker:
+    build: .
+    depends_on:
+      - rabbitmq
+      - redis
+    volumes:
+      - "./:/app"
+    command: "celery --app=app.worker worker -l info -Q test-queue -c 1"
+
+  datadog:
+    build: datadog
+    links:
+     - redis # ensures that redis is a host that the container can find
+     - fastapi # ensures that the web app can send metrics
+    environment:
+     - DD_API_KEY=550a6becf14a0a974f939536df9807c0
+     - DD_SITE=datadoghq.eu
+     - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+    volumes:
+     - /var/run/docker.sock:/var/run/docker.sock
+     - /proc/:/host/proc/:ro
+     - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
+
+volumes:
+  rabbitmq_data:
+    driver: local
+  redis_data:
+    driver: local
