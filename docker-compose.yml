@@ -1,20 +1,10 @@
 version: "3.7"
 
 services:
-  rabbitmq:
-    image: "bitnami/rabbitmq:3.7"
-    ports:
-      - "4369:4369"
-      - "5672:5672"
-      - "25672:25672"
-      - "15672:15672"
-    volumes:
-      - "rabbitmq_data:/bitnami"
-
   redis:
     image: "bitnami/redis:5.0.4"
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
+    env_file:
+      - conf/redis.env
     ports:
       - "6379:6379"
     volumes:
@@ -23,34 +13,35 @@ services:
   postgres:
     image: "postgres"
     env_file:
-      - postgres.env
+      - conf/postgres.env
     volumes:
       - database-data:/var/lib/postgresql/data/
     ports:
       - 5432:5432
+
+  rpc_worker:
+    build: rpc
+    stdin_open: true
+    tty: true
+    depends_on:
+      - redis
+    env_file:
+      - conf/fastapi.env
+    command: "python worker.py"
 
   fastapi:
     build: .
     ports:
       - "8000:8000"
     depends_on:
-      - rabbitmq
       - redis
       - postgres
+      - rpc_worker
     volumes:
       - "./:/app"
-    environment:
-      - DATADOG_HOST=datadog
+    env_file:
+      - conf/fastapi.env
     command: "python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
-
-  worker:
-    build: .
-    depends_on:
-      - rabbitmq
-      - redis
-    volumes:
-      - "./:/app"
-    command: "celery --app=app.worker worker -l info -Q test-queue -c 1"
 
   datadog:
     build: datadog
@@ -58,10 +49,8 @@ services:
      - redis # ensures that redis is a host that the container can find
      - postgres
      - fastapi # ensures that the web app can send metrics
-    environment:
-     - DD_API_KEY=550a6becf14a0a974f939536df9807c0
-     - DD_SITE=datadoghq.eu
-     - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+    env_file:
+      - conf/datadog.env
     volumes:
      - /var/run/docker.sock:/var/run/docker.sock
      - /proc/:/host/proc/:ro
@@ -74,3 +63,4 @@ volumes:
     driver: local
   database-data:
     driver: local
+

@@ -1,10 +1,12 @@
+import json
 import logging
 import os
 
+import uvicorn
 from datadog import initialize, statsd
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI
+from redisrpc import RedisRPC
 
-from app.common import celery_app
 from app.crud.routers.dealers import router as dealers_router
 from app.crud.routers.info import router as info_router
 from app.crud.routers.vehicles import router as vehicles_router
@@ -19,22 +21,15 @@ app.include_router(dealers_router, prefix="/dealers", tags=["dealers"])
 app.include_router(vehicles_router, prefix="/vehicles", tags=["vehicles"])
 app.include_router(info_router)
 
-
-def celery_on_message(body):
-    logger.warning(body)
+rpc_inst = RedisRPC(os.getenv("REDISRPC_CHANNEL"))
 
 
-def background_on_message(task):
-    logger.warning(task.get(on_message=celery_on_message, propagate=False))
+@app.get("/rpc/{number}")
+def rpc(number: int):
+    statsd.increment('fastapi.views.rpc')
+    result = rpc_inst.send("rpc", json.dumps({"key": number}))
+    return {"message": result}
 
 
-@app.get("/{word}")
-async def root(word: str, background_task: BackgroundTasks):
-    statsd.increment('docker_compose_example.page.views')
-    task_name = "app.worker.test_celery"
-
-    task = celery_app.send_task(task_name, args=[word])
-    print(task)
-    background_task.add_task(background_on_message, task)
-
-    return {"message": "Word received"}
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,7 +1,4 @@
-fastapi==0.63.0
-redis==3.5.3
 redispubsub==0.0.6
 datadog==0.40.1
-uvicorn==0.13.4
 SQLAlchemy==1.4.5
 pg8000==1.19.1
