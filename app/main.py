@@ -11,7 +11,7 @@ from app.crud.routers.dealers import router as dealers_router
 from app.crud.routers.info import router as info_router
 from app.crud.routers.vehicles import router as vehicles_router
 
-initialize(statsd_host=os.environ.get('DATADOG_HOST'))
+initialize(statsd_host=os.getenv('DATADOG_HOST'))
 
 logger = logging.getLogger(__name__)
 
